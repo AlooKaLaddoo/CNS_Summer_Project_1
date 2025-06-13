@@ -51,8 +51,18 @@ def load_eeg_data(file_path):
 
 def setup_output_folder(file_path):
     """Create output folder based on filename"""
+    # Extract subject and session info from BIDS path if present
     filename = os.path.basename(file_path).replace('.edf', '')
-    output_dir = f'./Dataset/Infants_data_output/{filename}'
+    
+    # Check if it's a BIDS-style path (contains 'sub-' and 'ses-')
+    if 'sub-' in filename and 'ses-' in filename:
+        parts = filename.split('_')
+        subject_id = [p for p in parts if p.startswith('sub-')][0]
+        session_id = [p for p in parts if p.startswith('ses-')][0]
+        output_dir = f'./Dataset/Infants_data_output/{subject_id}_{session_id}'
+    else:
+        output_dir = f'./Dataset/Infants_data_output/{filename}'
+    
     os.makedirs(output_dir, exist_ok=True)
     print(f"Output folder: {output_dir}")
     return output_dir
@@ -63,20 +73,34 @@ def preprocess_eeg(raw):
     raw_filtered.filter(CONFIG['highpass'], CONFIG['lowpass'], fir_design='firwin', verbose=False)
     data, times = raw_filtered[:, :]
     
-    # Standard EEG electrodes
-    eeg_names = ['Fp1', 'Fp2', 'F3', 'F4', 'F7', 'F8', 'FZ', 'C3', 'C4', 'CZ', 
-                 'P3', 'P4', 'PZ', 'O1', 'O2', 'T3', 'T4', 'T5', 'T6']
-    
+    # Get all EEG channels from the data, excluding reference and artifact channels
     eeg_indices = []
     eeg_channels = []
     
+    # Channels to exclude (reference, ground, artifact channels)
+    exclude_patterns = ['Pg', 'REF', 'GND', 'ECG', 'EOG', 'EMG', '+', '-']
+    
     for i, ch in enumerate(raw_filtered.ch_names):
-        if ch in eeg_names:
+        # Include channel if it doesn't match exclude patterns and is marked as EEG
+        is_eeg = raw_filtered.get_channel_types()[i] == 'eeg'
+        is_excluded = any(pattern in ch for pattern in exclude_patterns)
+        
+        if is_eeg and not is_excluded:
             eeg_indices.append(i)
             eeg_channels.append(ch)
     
+    # If no channels found with type filtering, fall back to standard 10-20 names
+    if len(eeg_channels) == 0:
+        standard_eeg = ['Fp1', 'Fp2', 'F3', 'F4', 'F7', 'F8', 'FZ', 'C3', 'C4', 'CZ', 
+                       'P3', 'P4', 'PZ', 'O1', 'O2', 'T3', 'T4', 'T5', 'T6']
+        for i, ch in enumerate(raw_filtered.ch_names):
+            if ch in standard_eeg:
+                eeg_indices.append(i)
+                eeg_channels.append(ch)
+    
     clean_data = data[eeg_indices, :]
     print(f"Preprocessed: {len(eeg_channels)} EEG channels")
+    print(f"Channels: {eeg_channels}")
     return clean_data, eeg_channels, times
 
 def plot_eeg_sample(data, channels, times, sampling_freq, save_path=None):
