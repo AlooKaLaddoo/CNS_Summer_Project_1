@@ -29,6 +29,7 @@ CONFIG = {
     'overlap_ratio': 0.3,   # Window overlap ratio (0-1)
     'threshold_percentile': 95,  # Network graph threshold percentile
     'max_pairs': 5,         # Max pairs for temporal dynamics analysis
+    'use_float32': True,    # Use float32 for memory optimization
 }
 
 def setup_environment():
@@ -132,12 +133,18 @@ def prepare_data(data, original_fs):
     """Downsample and prepare data for analysis"""
     data = np.asarray(data)
     
+    # Apply data type optimization
+    if CONFIG['use_float32']:
+        data = data.astype(np.float32)
+    
     if original_fs <= CONFIG['target_fs']:
         processed_data = data.copy()
         new_fs = original_fs
     else:
         n_new = int(data.shape[1] * CONFIG['target_fs'] / original_fs)
         processed_data = np.asarray(signal.resample(data, n_new, axis=1))
+        if CONFIG['use_float32']:
+            processed_data = processed_data.astype(np.float32)
         new_fs = CONFIG['target_fs']
         print(f"Downsampled: {original_fs} → {new_fs} Hz")
     
@@ -149,6 +156,8 @@ def calculate_granger_causality_pair(args):
     i, j, data, channel_names, max_lag = args
     try:
         test_data = np.column_stack([data[j, :], data[i, :]])
+        # Convert to float64 for precise GC calculation
+        test_data = test_data.astype(np.float64)
         result = grangercausalitytests(test_data, max_lag, verbose=False)
         best_result = min(
             (result[lag][0]['ssr_ftest'] for lag in range(1, max_lag + 1)),
@@ -410,65 +419,94 @@ def segment_data_into_windows(data, sampling_freq):
 
 def calculate_gc_for_window(args):
     """Helper for parallel window processing"""
-    window_idx, window_data, channel_names, n_cores = args
+    window_idx, window_data, channel_names, n_cores, output_dir = args
     try:
         gc_matrix, p_values = calculate_granger_causality(window_data, channel_names, n_cores)
         significant_gc = apply_significance_threshold(gc_matrix, p_values)
-        return window_idx, gc_matrix, p_values, significant_gc
+        
+        # Save window results immediately to reduce memory usage
+        if output_dir:
+            np.save(os.path.join(output_dir, f'window_{window_idx:03d}_gc.npy'), gc_matrix.astype(np.float32))
+            np.save(os.path.join(output_dir, f'window_{window_idx:03d}_pval.npy'), p_values.astype(np.float32))
+        
+        # Return only summary statistics instead of full matrices
+        n_connections = np.sum(significant_gc > 0)
+        mean_strength = np.mean(gc_matrix[gc_matrix > 0]) if np.sum(gc_matrix > 0) > 0 else 0
+        max_strength = np.max(gc_matrix)
+        
+        return window_idx, n_connections, mean_strength, max_strength, significant_gc.astype(np.float32)
     except Exception:
-        n_channels = len(channel_names)
-        zero_matrix = np.zeros((n_channels, n_channels))
-        one_matrix = np.ones((n_channels, n_channels))
-        return window_idx, zero_matrix, one_matrix, zero_matrix
+        return window_idx, 0, 0.0, 0.0, None
 
-def analyze_time_windows(data, channel_names, sampling_freq, n_cores):
-    """Calculate Granger causality across multiple time windows"""
+def analyze_time_windows(data, channel_names, sampling_freq, n_cores, output_dir):
+    """Calculate Granger causality across multiple time windows with progressive processing"""
     windows, window_info = segment_data_into_windows(data, sampling_freq)
     
     n_channels = len(channel_names)
-    gc_results = {
-        'gc_matrices': [None] * len(windows),
-        'p_value_matrices': [None] * len(windows),
-        'significant_matrices': [None] * len(windows),
-        'window_info': window_info
-    }
+    
+    # Create temporary directory for window results
+    temp_dir = os.path.join(output_dir, 'temp_windows')
+    os.makedirs(temp_dir, exist_ok=True)
     
     print(f"Calculating GC for {len(windows)} windows")
     
-    window_args = [(i, window_data, channel_names, 1)  # Use 1 core per window to avoid nested parallelism
+    window_args = [(i, window_data, channel_names, 1, temp_dir)  # Use 1 core per window + temp_dir
                    for i, window_data in enumerate(windows)]
+    
+    # Progressive processing with memory optimization
+    significant_matrices = []
+    window_metrics = []
     
     with ProcessPoolExecutor(max_workers=n_cores) as executor:
         results = list(executor.map(calculate_gc_for_window, window_args))
     
-    for window_idx, gc_matrix, p_values, significant_gc in results:
-        gc_results['gc_matrices'][window_idx] = gc_matrix
-        gc_results['p_value_matrices'][window_idx] = p_values
-        gc_results['significant_matrices'][window_idx] = significant_gc
+    for window_idx, n_connections, mean_strength, max_strength, significant_gc in results:
+        if significant_gc is not None:
+            significant_matrices.append(significant_gc)
+            window_metrics.append({
+                'window_idx': window_idx,
+                'start_time': window_info[window_idx]['start_time'],
+                'n_connections': n_connections,
+                'mean_strength': mean_strength,
+                'max_strength': max_strength
+            })
         
-        n_connections = np.sum(significant_gc > 0)
         print(f"Window {window_idx+1}/{len(windows)}: ✓ {n_connections} connections")
+    
+    # Return lightweight results structure
+    gc_results = {
+        'significant_matrices': significant_matrices,
+        'window_info': window_info,
+        'metrics': window_metrics,
+        'temp_dir': temp_dir  # For accessing saved full matrices if needed
+    }
     
     return gc_results
 
 def plot_connectivity_evolution(gc_results, channel_names, save_path=None):
     """Plot how connectivity evolves across time windows"""
-    gc_matrices = gc_results['gc_matrices']
-    window_info = gc_results['window_info']
     
-    metrics = []
-    for i, gc_matrix in enumerate(gc_matrices):
-        total_conn = np.sum(gc_matrix > 0)
-        mean_strength = np.mean(gc_matrix[gc_matrix > 0]) if total_conn > 0 else 0
+    # Use pre-computed metrics for memory efficiency
+    if 'metrics' in gc_results:
+        metrics_df = pd.DataFrame(gc_results['metrics'])
+    else:
+        # Fallback for old format
+        gc_matrices = gc_results['gc_matrices']
+        window_info = gc_results['window_info']
         
-        metrics.append({
-            'start_time': window_info[i]['start_time'],
-            'total_connections': total_conn,
-            'mean_strength': mean_strength,
-            'max_strength': np.max(gc_matrix)
-        })
-    
-    metrics_df = pd.DataFrame(metrics)
+        metrics = []
+        for i, gc_matrix in enumerate(gc_matrices):
+            total_conn = np.sum(gc_matrix > 0)
+            mean_strength = np.mean(gc_matrix[gc_matrix > 0]) if total_conn > 0 else 0
+            
+            metrics.append({
+                'start_time': window_info[i]['start_time'],
+                'total_connections': total_conn,
+                'mean_strength': mean_strength,
+                'max_strength': np.max(gc_matrix)
+            })
+        
+        metrics_df = pd.DataFrame(metrics)
     
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 8))
     
@@ -548,11 +586,24 @@ def save_results(output_dir, gc_matrix, p_values, significant_gc, channel_names,
         np.save(os.path.join(output_dir, f'{name}.npy'), data)
         saved_files.append(f'{name}.npy')
     
-    # Save window analysis if available
+    # Save window analysis if available (optimized for new format)
     if gc_results:
-        np.save(os.path.join(output_dir, 'window_matrices.npy'), gc_results['gc_matrices'])
-        np.save(os.path.join(output_dir, 'window_pvalues.npy'), gc_results['p_value_matrices'])
-        saved_files.extend(['window_matrices.npy', 'window_pvalues.npy'])
+        if 'metrics' in gc_results:
+            # Save metrics as CSV for easy analysis
+            pd.DataFrame(gc_results['metrics']).to_csv(os.path.join(output_dir, 'window_metrics.csv'), index=False)
+            saved_files.append('window_metrics.csv')
+            
+            # Save only significant matrices (memory optimized)
+            if 'significant_matrices' in gc_results:
+                np.save(os.path.join(output_dir, 'window_significant_matrices.npy'), 
+                       np.array(gc_results['significant_matrices']))
+                saved_files.append('window_significant_matrices.npy')
+        else:
+            # Fallback for old format
+            if 'gc_matrices' in gc_results:
+                np.save(os.path.join(output_dir, 'window_matrices.npy'), gc_results['gc_matrices'])
+                np.save(os.path.join(output_dir, 'window_pvalues.npy'), gc_results['p_value_matrices'])
+                saved_files.extend(['window_matrices.npy', 'window_pvalues.npy'])
     
     # Save CSV files
     if connections_df is not None:
@@ -569,6 +620,14 @@ def save_results(output_dir, gc_matrix, p_values, significant_gc, channel_names,
     saved_files.append('channels.txt')
     
     print(f"Saved {len(saved_files)} files to: {output_dir}")
+    
+    # Clean up temporary files if they exist
+    if gc_results and 'temp_dir' in gc_results:
+        import shutil
+        temp_dir = gc_results['temp_dir']
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+            print("Cleaned up temporary window files")
 
 def main():
     """Main analysis pipeline"""
@@ -634,7 +693,7 @@ def main():
     
     # 7. Time window analysis
     print("\n6. Time window analysis...")
-    gc_results = analyze_time_windows(eeg_subset, channel_names, new_fs, n_cores)
+    gc_results = analyze_time_windows(eeg_subset, channel_names, new_fs, n_cores, output_dir)
     
     metrics_df = plot_connectivity_evolution(
         gc_results, channel_names,
