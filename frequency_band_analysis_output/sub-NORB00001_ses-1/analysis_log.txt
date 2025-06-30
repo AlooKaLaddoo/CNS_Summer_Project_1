@@ -1,0 +1,94 @@
+FREQUENCY BAND EEG ANALYSIS LOG
+File: /home/alookaladdoo/CNS_Summer_Project_1-1/Dataset/Infants_data/sub-NORB00001/ses-1/eeg/sub-NORB00001_ses-1_task-EEG_eeg.edf
+Analysis started: 2025-06-19 12:08:25
+Configuration: {'sampling_freq': 200, 'filter_method': 'fir', 'frequency_bands': {'delta': (0.5, 4), 'theta': (4, 8), 'alpha': (8, 13), 'beta': (13, 30), 'gamma': (30, 45)}, 'window_length': 4, 'overlap_ratio': 0.3, 'max_lag': 3, 'alpha': 0.02, 'top_connections': 10, 'network_threshold_percentile': 90, 'n_cores': 16, 'use_gpu': False, 'chunk_size': 100}
+
+Loading EEG data from: /home/alookaladdoo/CNS_Summer_Project_1-1/Dataset/Infants_data/sub-NORB00001/ses-1/eeg/sub-NORB00001_ses-1_task-EEG_eeg.edf
+Original data: 21 channels, 714.0s duration, 200.0 Hz
+Selected EEG channels (21): Fp1, Fp2, F3, F4, C3, C4, P3, P4, O1, O2, F7, F8, T3, T4, T5, T6, FZ, CZ, PZ, Pg1, Pg2
+
+=== DELTA BAND ANALYSIS (0.5-4 Hz) ===
+Created 254 time windows with 30.0% overlap
+Found 420 unique connections across all windows
+
+=== THETA BAND ANALYSIS (4-8 Hz) ===
+Created 254 time windows with 30.0% overlap
+Found 420 unique connections across all windows
+
+=== ALPHA BAND ANALYSIS (8-13 Hz) ===
+Created 254 time windows with 30.0% overlap
+Found 420 unique connections across all windows
+
+=== BETA BAND ANALYSIS (13-30 Hz) ===
+Created 254 time windows with 30.0% overlap
+Found 420 unique connections across all windows
+
+=== GAMMA BAND ANALYSIS (30-45 Hz) ===
+Created 254 time windows with 30.0% overlap
+Found 420 unique connections across all windows
+
+==================================================
+SUMMARY STATISTICS ACROSS ALL FREQUENCY BANDS
+==================================================
+
+DELTA BAND:
+  Total unique connections: 420
+  Total connection occurrences: 104527
+  Average connection frequency: 248.87
+  Maximum connection frequency: 254
+  Top 5 connections:
+    1. Fp1->C4: 254 times
+    2. F3->F8: 254 times
+    3. F4->FZ: 254 times
+    4. F4->CZ: 254 times
+    5. C4->Fp1: 254 times
+
+THETA BAND:
+  Total unique connections: 420
+  Total connection occurrences: 103631
+  Average connection frequency: 246.74
+  Maximum connection frequency: 254
+  Top 5 connections:
+    1. C3->Fp1: 254 times
+    2. T4->Fp1: 254 times
+    3. C3->C4: 253 times
+    4. P3->F3: 253 times
+    5. F8->C3: 253 times
+
+ALPHA BAND:
+  Total unique connections: 420
+  Total connection occurrences: 101586
+  Average connection frequency: 241.87
+  Maximum connection frequency: 254
+  Top 5 connections:
+    1. Pg1->Pg2: 254 times
+    2. Pg2->Pg1: 254 times
+    3. Fp1->P4: 251 times
+    4. F3->T6: 250 times
+    5. P3->Fp2: 250 times
+
+BETA BAND:
+  Total unique connections: 420
+  Total connection occurrences: 88141
+  Average connection frequency: 209.86
+  Maximum connection frequency: 254
+  Top 5 connections:
+    1. Pg1->CZ: 254 times
+    2. Pg1->Pg2: 254 times
+    3. Pg2->Pg1: 254 times
+    4. CZ->Pg1: 253 times
+    5. CZ->Pg2: 253 times
+
+GAMMA BAND:
+  Total unique connections: 420
+  Total connection occurrences: 80602
+  Average connection frequency: 191.91
+  Maximum connection frequency: 254
+  Top 5 connections:
+    1. Pg1->Pg2: 254 times
+    2. Pg2->Pg1: 254 times
+    3. F3->C3: 220 times
+    4. C3->F3: 219 times
+    5. Fp1->C4: 218 times
+
+Analysis completed: 2025-06-19 12:14:16
