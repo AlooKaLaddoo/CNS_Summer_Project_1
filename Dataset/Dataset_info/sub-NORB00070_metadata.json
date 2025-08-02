@@ -1,0 +1,89 @@
+{
+  "subject_id": "sub-NORB00070",
+  "sessions": [
+    {
+      "file_path": "./Dataset/Infants_data/sub-NORB00070/ses-1/eeg/sub-NORB00070_ses-1_task-EEG_eeg.edf",
+      "duration_sec": 416.0,
+      "sfreq": 200.0,
+      "n_channels": 19,
+      "channel_names": [
+        "Fp1",
+        "Fp2",
+        "F3",
+        "F4",
+        "C3",
+        "C4",
+        "P3",
+        "P4",
+        "O1",
+        "O2",
+        "F7",
+        "F8",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "FZ",
+        "CZ",
+        "PZ"
+      ],
+      "start_datetime": "2023-01-01T17:53:02+00:00"
+    },
+    {
+      "file_path": "./Dataset/Infants_data/sub-NORB00070/ses-2/eeg/sub-NORB00070_ses-2_task-EEG_eeg.edf",
+      "duration_sec": 240.0,
+      "sfreq": 200.0,
+      "n_channels": 19,
+      "channel_names": [
+        "Fp1",
+        "Fp2",
+        "F3",
+        "F4",
+        "C3",
+        "C4",
+        "P3",
+        "P4",
+        "O1",
+        "O2",
+        "F7",
+        "F8",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "FZ",
+        "CZ",
+        "PZ"
+      ],
+      "start_datetime": "2023-01-01T06:41:34+00:00"
+    },
+    {
+      "file_path": "./Dataset/Infants_data/sub-NORB00070/ses-3/eeg/sub-NORB00070_ses-3_task-EEG_eeg.edf",
+      "duration_sec": 328.0,
+      "sfreq": 200.0,
+      "n_channels": 19,
+      "channel_names": [
+        "Fp1",
+        "Fp2",
+        "F3",
+        "F4",
+        "C3",
+        "C4",
+        "P3",
+        "P4",
+        "O1",
+        "O2",
+        "F7",
+        "F8",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "FZ",
+        "CZ",
+        "PZ"
+      ],
+      "start_datetime": "2023-01-01T13:13:44+00:00"
+    }
+  ]
+}

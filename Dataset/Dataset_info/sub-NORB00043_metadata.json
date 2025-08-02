@@ -1,0 +1,38 @@
+{
+  "subject_id": "sub-NORB00043",
+  "sessions": [
+    {
+      "file_path": "./Dataset/Infants_data/sub-NORB00043/ses-1/eeg/sub-NORB00043_ses-1_task-EEG_eeg.edf",
+      "duration_sec": 1020.0,
+      "sfreq": 200.0,
+      "n_channels": 24,
+      "channel_names": [
+        "Fp1",
+        "Fp2",
+        "F3",
+        "F4",
+        "C3",
+        "C4",
+        "P3",
+        "P4",
+        "O1",
+        "O2",
+        "F7",
+        "F8",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "FZ",
+        "CZ",
+        "PZ",
+        "Pg1",
+        "Pg2",
+        "25+",
+        "26+",
+        "27+"
+      ],
+      "start_datetime": "2023-01-01T09:06:42+00:00"
+    }
+  ]
+}
