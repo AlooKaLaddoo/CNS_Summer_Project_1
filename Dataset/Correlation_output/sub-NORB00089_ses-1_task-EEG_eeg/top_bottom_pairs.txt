@@ -1,0 +1,23 @@
+Highest correlations:
+P3 - PZ: 0.991
+F3 - FZ: 0.989
+Fp1 - Fp2: 0.988
+Fp2 - F3: 0.984
+P4 - PZ: 0.984
+P3 - P4: 0.972
+Fp1 - F3: 0.972
+O1 - O2: 0.971
+Fp2 - FZ: 0.968
+Fp1 - F7: 0.967
+
+Lowest correlations:
+O1 - CZ: 0.585
+C3 - O1: 0.597
+O2 - CZ: 0.614
+C3 - O2: 0.624
+F4 - T6: 0.626
+T5 - CZ: 0.628
+O2 - FZ: 0.644
+O1 - FZ: 0.645
+F4 - O1: 0.651
+F4 - O2: 0.654
