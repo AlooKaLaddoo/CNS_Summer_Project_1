@@ -1,3 +1,0 @@
-Mean within-region correlation: 0.953 ± 0.035
-Mean between-region correlation: 0.907 ± 0.035
-Difference: 0.046
